@@ -1,0 +1,19 @@
+# Entorno virtual
+.venv/
+
+# Caché de Python y compilados
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Entorno de desarrollo / VS Code
+.vscode/
+.DS_Store
+
+# Archivos de datos o salida local (opcional)
+# Si no quieres subir archivos de Excel pesados o reportes generados a Git:
+*.xlsx
+*.csv
+reportes/*.pdf
