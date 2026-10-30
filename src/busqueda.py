@@ -1,6 +1,4 @@
 from collections import deque
-import networkx as nx
-
 
 def bfs(grafo, inicio='Diagnostico', meta='Alta'):
     """
@@ -10,11 +8,11 @@ def bfs(grafo, inicio='Diagnostico', meta='Alta'):
     """
     frontera = deque([(inicio, [inicio], [], 0.0)])
     explorados = set()
+    explorados.add(inicio)
     nodos_expandidos = 0
 
     while frontera:
         nodo_actual, camino_estados, camino_acciones, costo_acum = frontera.popleft()
-
         if nodo_actual == meta:
             return {
                 'algoritmo': 'BFS',
@@ -23,27 +21,15 @@ def bfs(grafo, inicio='Diagnostico', meta='Alta'):
                 'costo_total': costo_acum,
                 'nodos_expandidos': nodos_expandidos,
             }
-
-        if nodo_actual in explorados:
-            continue
-
-        explorados.add(nodo_actual)
         nodos_expandidos += 1
-
-        for vecino in grafo.neighbors(nodo_actual):
-            if vecino in explorados:
-                continue
-
-            atributos = grafo[nodo_actual][vecino]
-            accion = atributos.get('accion', f"{nodo_actual}->{vecino}")
-
-            costo_arista = 1
-
-            frontera.append((
-                vecino,
-                camino_estados + [vecino],
-                camino_acciones + [accion],
-                costo_acum + costo_arista,
-            ))
-
+        neighbors = grafo.out_edges(nodo_actual, data=True)
+        for neighbor in neighbors:
+            vecino = neighbor[1]
+            if vecino not in explorados:
+                explorados.add(vecino)
+                arista_data = neighbor[2]
+                nuevo_costo = costo_acum + arista_data['peso']
+                frontera.append((vecino, camino_estados + [vecino], camino_acciones + [arista_data['tratamiento']], nuevo_costo))
     return None
+
+

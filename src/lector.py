@@ -65,8 +65,3 @@ def obtener_paciente(pacientes, id_paciente):
 
 def obtener_aristas(matriz_Tratamientos):
     return matriz_Tratamientos.to_dict(orient="records")
-
-if __name__ == "__main__":
-    pacientes, matriz = cargar()
-    validar(pacientes, matriz)
-    print("Validación exitosa:", len(pacientes), "pacientes y", len(matriz), "aristas.")
