@@ -1,32 +1,30 @@
-from costos import calcular_peso_arista
+import networkx as nx
+from lector import obtener_aristas, cargar, validar
 
-def construir_grafo(pacientes, matriz_Tratamientos):
-    """
-    Construye un grafo dirigido ponderado a partir de los datos de pacientes y la matriz de tratamientos.
-    
-    Pacientes: Diccionario o Serie de Pandas con los datos de 1 pacientes.
-    matriz_Tratamientos: Diccionario o Serie de Pandas con los datos de 1 fila de Matriz_matriz_Tratamientoss.
-    
-    Retorna un diccionario que representa el grafo, donde las llaves son los nodos y los valores son listas de tuplas (nodo_destino, peso_arista).
-    """
-    estados = ['Diagnostico', 'Post_Op_Mayor', 'Post_Op_Menor', 'Consolidacion', 'Alta']
-    grafo = {estado: [] for estado in estados}
+def calcular_costo(grafo, paciente):
+    return 0
 
-    for _, fila in matriz_Tratamientos.iterrows():
-        origen = fila['Estado_Origen']
-        destino = fila['Estado_Destino']
-        accion = fila['Tratamiento']
-        efectividad = fila['Tasa_Efectividad_Base']
+def construir_grafo(aristas):
+    G = nx.MultiDiGraph()
+    for arista in aristas:
+        origen = arista["Fase_Origen"]
+        destino = arista["Fase_Destino"]
+        G.add_edge(origen, destino,
+                peso = 1,
+                tratamiento=arista["Tratamiento"],
+                efectividad=arista["Tasa_Efectividad_Base"],
+                costo_base=arista["Costo_Financiero_Base"],
+                mult_renal=arista["Multiplicador_Riesgo_Renal"],
+                mult_cardio=arista["Multiplicador_Riesgo_Cardio"],
+                mult_edad=arista["Multiplicador_Riesgo_Edad"],
+                mult_inmuno=arista["Multiplicador_Inmuno"])
+    return G
 
-        costo_unificado = calcular_peso_arista(pacientes, fila)
 
-        arista = {
-            'destino': destino,
-            'accion': accion,
-            'efectividad': efectividad,
-            'costo_unificado': costo_unificado
-        }
-
-        grafo[origen].append(arista)
-
-    return grafo
+if __name__ == "__main__":
+    pacientes, matriz = cargar()
+    validar(pacientes, matriz)
+    aristas = obtener_aristas(matriz)
+    grafo = construir_grafo(aristas)
+    print(grafo.number_of_nodes(), "nodos en el grafo.")
+    print(grafo.number_of_edges(), "aristas en el grafo.")
