@@ -11,7 +11,7 @@ def bfs(grafo, inicio='Diagnostico', meta='Alta'):
     Ignora costos y riesgos del paciente (peso = 1 por arista).
     Retorna: ruta_estados, ruta_tratamientos, costo_acumulado, nodos_expandidos.
     """
-    frontera = deque([(inicio, [inicio], [], 0.0, 0.0, 0.0)])
+    frontera = deque([(inicio, [inicio], [], 0.0, 0.0, 1.0)])
     explorados = set()
     explorados.add(inicio)
     nodos_expandidos = 0
@@ -24,7 +24,6 @@ def bfs(grafo, inicio='Diagnostico', meta='Alta'):
                 'camino_estados': camino_estados,
                 'ruta_propuesta': camino_acciones,
                 'costo_total': costo_acum,
-                'tasa_efectividad': tasa_efectividad,
                 'nodos_expandidos': nodos_expandidos,
                 'costo_financiero': costo_financiero,
                 'tasa_efectividad': tasa_efectividad
@@ -38,7 +37,7 @@ def bfs(grafo, inicio='Diagnostico', meta='Alta'):
                 arista_data = neighbor[2]
                 nuevo_costo = costo_acum + arista_data['peso']
                 nuevo_costo_financiero = costo_financiero + arista_data['costo_base']
-                nueva_tasa_efectividad = tasa_efectividad + arista_data['efectividad']
+                nueva_tasa_efectividad = tasa_efectividad * arista_data['efectividad']
                 frontera.append((vecino, camino_estados + [vecino], camino_acciones + [arista_data['tratamiento']], nuevo_costo, nuevo_costo_financiero, nueva_tasa_efectividad))
     return None
 
@@ -54,7 +53,7 @@ def ucs(grafo, inicio='Diagnostico', meta='Alta'):
     """
     desempate = 0
     frontera = []
-    heapq.heappush(frontera, (0.0, desempate, inicio, [inicio], [], 0.0, 0.0))
+    heapq.heappush(frontera, (0.0, desempate, inicio, [inicio], [], 0.0, 1.0))
     costos_minimos = {inicio: 0.0}
     nodos_expandidos = 0
 
@@ -81,5 +80,5 @@ def ucs(grafo, inicio='Diagnostico', meta='Alta'):
             if vecino not in costos_minimos or costo_total < costos_minimos[vecino]:
                 costos_minimos[vecino] = costo_total
                 desempate += 1
-                heapq.heappush(frontera, (costo_total, desempate, vecino, camino_estados + [vecino], camino_acciones + [arista_data['tratamiento']], costo_financiero + arista_data['costo_base'], tasa_efectividad + arista_data['efectividad']))
+                heapq.heappush(frontera, (costo_total, desempate, vecino, camino_estados + [vecino], camino_acciones + [arista_data['tratamiento']], costo_financiero + arista_data['costo_base'], tasa_efectividad * arista_data['efectividad']))
     return None
