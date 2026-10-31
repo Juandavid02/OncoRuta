@@ -34,7 +34,7 @@ def dibujar_grafo(grafo):
 
     fig, ax = plt.subplots(figsize=(11, 6))
     nx.draw_networkx_nodes(grafo, pos, node_color="lightblue",
-                           node_size=tam_nodo, ax=ax)
+                        node_size=tam_nodo, ax=ax)
     nx.draw_networkx_labels(grafo, pos, font_size=8, ax=ax)
 
     # Agrupar las aristas por par (origen, destino) para detectar las paralelas

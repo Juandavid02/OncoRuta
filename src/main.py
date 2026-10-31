@@ -16,7 +16,7 @@ def main():
         print(f"  {origen} -> {destino} ({datos['tratamiento']})")
     print()
 
-    # 3. Probar BFS
+    # 3. Probar BFS final
     print(f"{'ID':<6}{'Algoritmo':<10}{'Ruta':<28}{'Costo':<8}{'Nodos exp.'}")
     print("-" * 62)
     for id_paciente in pacientes["ID_Paciente"]:
