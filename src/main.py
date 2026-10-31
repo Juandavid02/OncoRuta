@@ -1,7 +1,6 @@
 from lector import cargar, validar, obtener_paciente, obtener_aristas
-from grafo import construir_grafo, dibujar_grafo
-from busqueda import bfs
-from busqueda import ucs
+from grafo import construir_grafo, dibujar_grafo, asignar_costos
+from busqueda import bfs, ucs
 
 def main():
     # 1. Cargar y validar
@@ -25,15 +24,17 @@ def main():
         ruta = " > ".join(r["ruta_propuesta"])
         print(f"{id_paciente:<6}{r['algoritmo']:<10}{ruta:<55}{r['costo_total']:<40}{r['nodos_expandidos']}")
     #dibujar_grafo(grafo)
+    dibujar_grafo(grafo)
 
     # 5. Probar UCS
     print(f"\n{'ID':<6}{'Algoritmo':<10}{'Ruta':<55}{'Costo':<20}{'Costo Financiero':<20}{'Nodos exp.'}")
     print("-" * 120)
     for id_paciente in pacientes["ID_Paciente"]:
         paciente = obtener_paciente(pacientes, id_paciente)
-        r = ucs(grafo, paciente)
+        grafo_ucs = asignar_costos(grafo, paciente)
+        r = ucs(grafo_ucs)
         ruta = " > ".join(r["ruta_propuesta"])
-        print(f"{id_paciente:<6}{r['algoritmo']:<10}{ruta:<55}{r['costo_total']:<20}{r['costo_financiero']:<20}{r['nodos_expandidos']}")
+        print (f"{id_paciente:<6}{r['algoritmo']:<10}{ruta:<55}{r['costo_total']:<20}{r['costo_financiero']:<20}{r['nodos_expandidos']}")
     #dibujar_grafo(grafo)
 
 if __name__ == "__main__":
