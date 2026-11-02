@@ -1,16 +1,7 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 
-def obtener_maximizacion(paciente):
-    """
-    Define alpha y beta según las preferencias booleanas del paciente.
-    Nunca son fijos para toda la población.
-    """
-    if paciente["Maximizar_Supervivencia"] == 1:
-        return 0.2, 5000
-    if paciente["Minimizar_Costo_Financiero"] == 1:
-        return 1.5, 100
-    return 1.0, 1000
+
 
 def construir_grafo(aristas):
     """Construye un grafo dirigido a partir de la lista de aristas."""
@@ -29,6 +20,42 @@ def construir_grafo(aristas):
                 mult_inmuno=arista["Multiplicador_Inmuno"])
     return G
 
+
+def obtener_maximizacion(paciente):
+    """
+    Define alpha y beta según las preferencias booleanas del paciente.
+    Nunca son fijos para toda la población.
+    """
+    if paciente["Maximizar_Supervivencia"] == 1:
+        return 0.2, 5000
+    if paciente["Minimizar_Costo_Financiero"] == 1:
+        return 1.5, 100
+    return 1.0, 1000 
+
+def producto_multiplicadores(datos, paciente):
+    """Multiplica solo los multiplicadores de los factores de riesgo activos de los pacientes."""
+    producto = 1.0
+    if paciente["Insuficiencia_Renal"] == 1:
+        producto *= datos["mult_renal"]
+    if paciente["Cardiopatia"] == 1:
+        producto *= datos["mult_cardio"]
+    if paciente["Edad_Avanzada_Fragil"] == 1:
+        producto *= datos["mult_edad"]
+    if paciente["Inmunosupresion"] == 1:
+        producto *= datos["mult_inmuno"]
+    return producto
+
+def calcular_costo_ucs(datos, paciente):
+    """C_arista = (Costo_Base * alpha) + (beta * prod(Multiplicadores_Activos))"""
+    alpha, beta = obtener_maximizacion(paciente)
+    return (datos["costo_base"] * alpha) + (beta * producto_multiplicadores(datos, paciente))
+
+def asignar_costos(grafo, paciente):
+    copia = grafo.copy()
+    for _, _, datos in copia.edges(data=True):
+        datos["costo"] = calcular_costo_ucs(datos, paciente)
+    return copia
+
 def dibujar_grafo(grafo):
     """Dibuja el grafo con posiciones fijas y etiquetas de tratamientos en las aristas."""
     # Posiciones fijas: el flujo se lee de izquierda a derecha
@@ -43,7 +70,7 @@ def dibujar_grafo(grafo):
 
     fig, ax = plt.subplots(figsize=(11, 6))
     nx.draw_networkx_nodes(grafo, pos, node_color="lightblue",
-                           node_size=tam_nodo, ax=ax)
+                        node_size=tam_nodo, ax=ax)
     nx.draw_networkx_labels(grafo, pos, font_size=8, ax=ax)
 
     # Agrupar las aristas por par (origen, destino) para detectar las paralelas
@@ -78,20 +105,3 @@ def dibujar_grafo(grafo):
     plt.tight_layout()
     plt.show()
 
-def producto_multiplicadores(datos, paciente):
-    """Multiplica solo los multiplicadores de los factores de riesgo activos de los pacientes."""
-    producto = 1.0
-    if paciente["Insuficiencia_Renal"] == 1:
-        producto *= datos["mult_renal"]
-    if paciente["Cardiopatia"] == 1:
-        producto *= datos["mult_cardio"]
-    if paciente["Edad_Avanzada_Fragil"] == 1:
-        producto *= datos["mult_edad"]
-    if paciente["Inmunosupresion"] == 1:
-        producto *= datos["mult_inmuno"]
-    return producto
-
-def calcular_costo_ucs(datos, paciente):
-    """C_arista = (Costo_Base * alpha) + (beta * prod(Multiplicadores_Activos))"""
-    alpha, beta = obtener_maximizacion(paciente)
-    return (datos["costo_base"] * alpha) + (beta * producto_multiplicadores(datos, paciente))

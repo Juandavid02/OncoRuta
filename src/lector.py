@@ -1,7 +1,10 @@
 import pandas as pd
 
-def cargar():
-    df = pd.read_excel("data/datos_clinicos.xlsx", sheet_name=None)
+def cargar(ruta="data/datos_clinicos.xlsx"):
+    df = pd.read_excel(ruta, sheet_name=None)
+    for hoja in ["Pacientes", "Matriz_Tratamientos"]:
+        if hoja not in df:
+            raise ValueError(f"La hoja '{hoja}' no se encuentra en el archivo Excel.")
     pacientes = df["Pacientes"]
     matriz_Tratamientos = df["Matriz_Tratamientos"]
     return pacientes, matriz_Tratamientos
