@@ -10,6 +10,19 @@ ALGORITMOS = {
     "UCS": ucs,
 }
 
+def generar_reporte_seleccion(pacientes, grafo, id_paciente, algoritmos):
+    """
+    Genera los reportes según lo que eligió el usuario en la app.
+    id_paciente puede ser un ID (por ejemplo "P003") o "Todos".
+    """
+    if not algoritmos:
+        raise ValueError("Debes elegir al menos un algoritmo.")
+    if id_paciente == "Todos":
+        return generar_reporte_completo(pacientes, algoritmos, grafo)
+    paciente = obtener_paciente(pacientes, id_paciente)
+    grafo_paciente = asignar_costos(grafo, paciente)
+    return generar_reporte_paciente_varios_algoritmos(id_paciente, algoritmos, grafo_paciente)
+
 def generar_reporte_paciente(id_paciente, algoritmo, grafo_paciente):
     """
     Genera un reporte
@@ -65,9 +78,8 @@ def generar_reporte_completo(pacientes, algoritmos, grafo):
     for id_paciente in pacientes["ID_Paciente"]:
         paciente = obtener_paciente(pacientes, id_paciente)
         grafo_paciente = asignar_costos(grafo, paciente)
-        for algoritmo in algoritmos:
-            reporte = generar_reporte_paciente(id_paciente, algoritmo, grafo_paciente)
-            reportes.append(reporte)
+        reportes_paciente = generar_reporte_paciente_varios_algoritmos(id_paciente, algoritmos, grafo_paciente)
+        reportes.extend(reportes_paciente)
     return reportes
 
 def ruta_a_texto(fila):
@@ -124,6 +136,6 @@ def exportar_reportes(tabla_reportes, ruta):
     if ruta.lower().endswith('.csv'):
         tabla_reportes.to_csv(ruta, index=False)
     elif ruta.lower().endswith('.xlsx'):
-        tabla_reportes.to_excel(ruta, index=False, enconding='utf-8-sig')
+        tabla_reportes.to_excel(ruta, index=False, encoding='utf-8-sig')
     else:
         raise ValueError("Formato de archivo no soportado.")
