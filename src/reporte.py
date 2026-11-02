@@ -134,8 +134,8 @@ def exportar_reportes(tabla_reportes, ruta):
     if tabla_reportes is None or tabla_reportes.empty:
         raise ValueError("No hay reportes para exportar.")
     if ruta.lower().endswith('.csv'):
-        tabla_reportes.to_csv(ruta, index=False)
+        tabla_reportes.to_csv(ruta, index=False, encoding='utf-8-sig')
     elif ruta.lower().endswith('.xlsx'):
-        tabla_reportes.to_excel(ruta, index=False, encoding='utf-8-sig')
+        tabla_reportes.to_excel(ruta, index=False)
     else:
         raise ValueError("Formato de archivo no soportado.")
