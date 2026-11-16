@@ -61,10 +61,6 @@ def producto_multiplicadores(datos, paciente):
         producto *= datos["mult_inmuno"]
     return producto
 
-def calcular_costo_ucs(datos, paciente):
-    alpha, beta = obtener_maximizacion(paciente)
-    riesgo = producto_multiplicadores(datos, paciente) * -math.log(datos["efectividad"])
-    return datos["costo_base"] * alpha + beta * riesgo
 
 def asignar_costos(grafo, paciente):
     copia = grafo.copy()
