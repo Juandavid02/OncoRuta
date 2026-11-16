@@ -111,7 +111,7 @@ class AppOncoRuta(tk.Tk):
         if self.var_ucs.get():
             algoritmos.append("UCS")
         if self.var_a_star.get():
-            print("En construcción: A*")
+            algoritmos.append("A*")
 
         if not algoritmos:
             self.etiqueta_estado.config(text="Elige al menos un algoritmo")
