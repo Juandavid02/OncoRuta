@@ -1,4 +1,4 @@
-from busqueda import bfs, ucs
+from busqueda import bfs, ucs, a_estrella
 
 from lector import obtener_paciente
 from grafo import asignar_costos
@@ -8,6 +8,7 @@ import pandas as pd
 ALGORITMOS = {
     "BFS": bfs,
     "UCS": ucs,
+    "A*": a_estrella,
 }
 
 def generar_reporte_seleccion(pacientes, grafo, id_paciente, algoritmos):
