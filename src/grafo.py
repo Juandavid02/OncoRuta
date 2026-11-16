@@ -20,6 +20,7 @@ def construir_grafo(aristas):
                 mult_inmuno=arista["Multiplicador_Inmuno"])
     return G
 
+
 def obtener_maximizacion(paciente):
     if paciente["Maximizar_Supervivencia"] == 1:
         return 0.2, 100000
@@ -27,10 +28,25 @@ def obtener_maximizacion(paciente):
         return 1.5, 80000
     return 1.0, 50000
 
-def calcular_costo_ucs(datos, paciente):
+def peso_severidad(paciente):
+    return 1 + (paciente["Severidad_Diagnostico"] -1 )/4
+
+def calcular_Gn(datos, paciente):
     alpha, beta = obtener_maximizacion(paciente)
-    riesgo = producto_multiplicadores(datos, paciente) * -math.log(datos["efectividad"])
+    efectividad = datos["efectividad"]
+    if efectividad <= 0:
+        efectividad = float('inf')
+    falla = -math.log(efectividad)
+    riesgo = peso_severidad(paciente) * producto_multiplicadores(datos, paciente) * falla
     return datos["costo_base"] * alpha + beta * riesgo
+
+def calcular_Hn(datos, paciente):
+    """Igual que el costo real, pero con ∏multiplicadores = 1."""
+    alpha, beta = obtener_maximizacion(paciente)
+    efectividad = datos["efectividad"]
+    if efectividad <= 0:
+        return float("inf")
+    return datos["costo_base"] * alpha + beta * peso_severidad(paciente) * -math.log(efectividad)
 
 def producto_multiplicadores(datos, paciente):
     """Multiplica solo los multiplicadores de los factores de riesgo activos de los pacientes."""
@@ -49,7 +65,7 @@ def producto_multiplicadores(datos, paciente):
 def asignar_costos(grafo, paciente):
     copia = grafo.copy()
     for _, _, datos in copia.edges(data=True):
-        datos["costo"] = calcular_costo_ucs(datos, paciente)
+        datos["costo"] = calcular_Gn(datos, paciente)
     return copia
 
 def dibujar_grafo(grafo):

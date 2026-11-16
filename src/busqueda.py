@@ -82,3 +82,8 @@ def ucs(grafo, inicio='Diagnostico', meta='Alta'):
                 desempate += 1
                 heapq.heappush(frontera, (costo_total, desempate, vecino, camino_estados + [vecino], camino_acciones + [arista_data['tratamiento']], costo_financiero + arista_data['costo_base'], tasa_efectividad * arista_data['efectividad']))
     return None
+
+# ---------------------------------------------------------------
+# Búsqueda en costo uniforme (UCS)
+# ---------------------------------------------------------------
+
