@@ -1,13 +1,48 @@
+import os
 import pandas as pd
 
-def cargar(ruta="data/datos_clinicos.xlsx"):
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+RUTA_DEFECTO = os.path.join(BASE_DIR, "data", "datos_clinicos.xlsx")
+
+def cargar_matriz_defecto():
+    if not os.path.isfile(RUTA_DEFECTO):
+        raise FileNotFoundError(f"No se encontró el archivo de datos clínicos por defecto: {RUTA_DEFECTO}")
+    return pd.read_excel(RUTA_DEFECTO, sheet_name="Matriz_Tratamientos")
+
+def cargar(ruta):
+    ruta = os.path.abspath(os.path.expanduser(ruta))
+    if not os.path.isfile(ruta):
+        raise FileNotFoundError(f"No se encontró el archivo: {ruta}")
+
+    extension = os.path.splitext(ruta)[1].lower()
+    if extension not in (".xlsx", ".xls", ".csv"):
+        raise ValueError(f"Formato de archivo no soportado: '{extension}'. Usa .xlsx, .xls o .csv")
+
+    if extension == ".csv":
+        return cargar_csv(ruta)
+
     df = pd.read_excel(ruta, sheet_name=None)
-    for hoja in ["Pacientes", "Matriz_Tratamientos"]:
-        if hoja not in df:
-            raise ValueError(f"La hoja '{hoja}' no se encuentra en el archivo Excel.")
+    if "Pacientes" not in df:
+        raise ValueError("La hoja 'Pacientes' no se encuentra en el archivo Excel.")
+
     pacientes = df["Pacientes"]
-    matriz_Tratamientos = df["Matriz_Tratamientos"]
+    if "Matriz_Tratamientos" in df:
+        matriz_Tratamientos = df["Matriz_Tratamientos"]
+    else:
+        matriz_Tratamientos = cargar_matriz_defecto()
     return pacientes, matriz_Tratamientos
+
+
+def cargar_csv(ruta):
+    tabla = pd.read_csv(ruta, sep=None, engine="python", encoding="utf-8-sig")
+    columnas = set(tabla.columns)
+    if "ID_Paciente" in columnas:
+        return tabla, cargar_matriz_defecto()
+    if "Tratamiento" in columnas:
+        raise ValueError("El CSV parece ser una matriz de tratamientos. Carga un CSV de pacientes.")
+    raise ValueError("El CSV no tiene la columna 'ID_Paciente'; no parece una tabla de pacientes.")
+
+
 
 def validar(pacientes, matriz_Tratamientos):
     validar_pacientes(pacientes)
@@ -67,4 +102,6 @@ def obtener_paciente(pacientes, id_paciente):
     return paciente.to_dict(orient="records")[0]
 
 def obtener_aristas(matriz_Tratamientos):
+    if matriz_Tratamientos is None:
+        raise ValueError("La hoja 'Matriz_Tratamientos' no se encuentra en el archivo.")
     return matriz_Tratamientos.to_dict(orient="records")
