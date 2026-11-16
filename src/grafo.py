@@ -1,6 +1,6 @@
 import networkx as nx
 import matplotlib.pyplot as plt
-
+import math
 
 
 def construir_grafo(aristas):
@@ -20,17 +20,17 @@ def construir_grafo(aristas):
                 mult_inmuno=arista["Multiplicador_Inmuno"])
     return G
 
-
 def obtener_maximizacion(paciente):
-    """
-    Define alpha y beta según las preferencias booleanas del paciente.
-    Nunca son fijos para toda la población.
-    """
     if paciente["Maximizar_Supervivencia"] == 1:
-        return 0.2, 5000
+        return 0.2, 100000
     if paciente["Minimizar_Costo_Financiero"] == 1:
-        return 1.5, 100
-    return 1.0, 1000 
+        return 1.5, 80000
+    return 1.0, 50000
+
+def calcular_costo_ucs(datos, paciente):
+    alpha, beta = obtener_maximizacion(paciente)
+    riesgo = producto_multiplicadores(datos, paciente) * -math.log(datos["efectividad"])
+    return datos["costo_base"] * alpha + beta * riesgo
 
 def producto_multiplicadores(datos, paciente):
     """Multiplica solo los multiplicadores de los factores de riesgo activos de los pacientes."""
@@ -45,10 +45,6 @@ def producto_multiplicadores(datos, paciente):
         producto *= datos["mult_inmuno"]
     return producto
 
-def calcular_costo_ucs(datos, paciente):
-    """C_arista = (Costo_Base * alpha) + (beta * prod(Multiplicadores_Activos))"""
-    alpha, beta = obtener_maximizacion(paciente)
-    return (datos["costo_base"] * alpha) + (beta * producto_multiplicadores(datos, paciente))
 
 def asignar_costos(grafo, paciente):
     copia = grafo.copy()
