@@ -1,7 +1,6 @@
 import math
 import networkx as nx
 import matplotlib.pyplot as plt
-import math
 
 
 def construir_grafo(aristas):
@@ -24,12 +23,10 @@ def construir_grafo(aristas):
 def obtener_maximizacion(paciente):
     if paciente["Maximizar_Supervivencia"] == 1:
         return 0.2, 100000
-        return 0.2, 100000
     if paciente["Minimizar_Costo_Financiero"] == 1:
         return 1.5, 80000
     return 1.0, 50000
-        return 1.5, 80000
-    return 1.0, 50000
+
 
 def peso_severidad(paciente):
     return 1 + (paciente["Severidad_Diagnostico"] -1 )/4
