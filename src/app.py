@@ -4,7 +4,7 @@ from tkinter import filedialog
 
 from tkinter import messagebox
 
-from lector import cargar, validar, obtener_aristas
+from lector import cargar, validar, obtener_aristas, RUTA_DEFECTO
 from grafo import construir_grafo
 from reporte import generar_reporte_seleccion, convertir_reportes_a_dataframe, tabla_final_reportes, exportar_reportes
 import pandas as pd
@@ -52,7 +52,7 @@ class AppOncoRuta(tk.Tk):
         self.etiqueta_archivo.pack(side="left", padx=10)
 
     def cargar_excel(self):
-        ruta = filedialog.askopenfilename(title="Seleccionar archivo Excel", filetypes=[("Excel o CSV", "*.xlsx *.csv")])
+        ruta = filedialog.askopenfilename(title="Seleccionar archivo Excel", filetypes=[("Excel o CSV", "*.xlsx *.xls *.csv")]) 
         if ruta == "":
             return
         try:
@@ -129,13 +129,18 @@ class AppOncoRuta(tk.Tk):
 
     def cargar_datos_iniciales(self):
         try:
-            pacientes, matriz = cargar()
+            pacientes, matriz = cargar(RUTA_DEFECTO)
             validar(pacientes, matriz)
             self.pacientes = pacientes
             self.matriz = matriz
             self.grafo = construir_grafo(obtener_aristas(matriz))
-        except Exception  as e:
-            messagebox.showerror("Error al cargar datos", str(e))   
+            self.ruta_excel = RUTA_DEFECTO
+        except Exception as e:
+            messagebox.showerror("Error al cargar datos", str(e))
+
+
+
+
 
     def obtener_paciente(self):
         if self.pacientes is None:
