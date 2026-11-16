@@ -2,6 +2,7 @@ import math
 import networkx as nx
 import matplotlib.pyplot as plt
 
+
 def construir_grafo(aristas):
     """Construye un grafo dirigido a partir de la lista de aristas."""
     G = nx.MultiDiGraph()
@@ -26,6 +27,27 @@ def obtener_maximizacion(paciente):
         return 1.5, 80000
     return 1.0, 50000
 
+
+def peso_severidad(paciente):
+    return 1 + (paciente["Severidad_Diagnostico"] -1 )/4
+
+def calcular_Gn(datos, paciente):
+    alpha, beta = obtener_maximizacion(paciente)
+    efectividad = datos["efectividad"]
+    if efectividad <= 0:
+        efectividad = float('inf')
+    falla = -math.log(efectividad)
+    riesgo = peso_severidad(paciente) * producto_multiplicadores(datos, paciente) * falla
+    return datos["costo_base"] * alpha + beta * riesgo
+
+def calcular_Hn(datos, paciente):
+    """Igual que el costo real, pero con ∏multiplicadores = 1."""
+    alpha, beta = obtener_maximizacion(paciente)
+    efectividad = datos["efectividad"]
+    if efectividad <= 0:
+        return float("inf")
+    return datos["costo_base"] * alpha + beta * peso_severidad(paciente) * -math.log(efectividad)
+
 def producto_multiplicadores(datos, paciente):
     """Multiplica solo los multiplicadores de los factores de riesgo activos de los pacientes."""
     producto = 1.0
@@ -47,7 +69,7 @@ def calcular_costo_ucs(datos, paciente):
 def asignar_costos(grafo, paciente):
     copia = grafo.copy()
     for _, _, datos in copia.edges(data=True):
-        datos["costo"] = calcular_costo_ucs(datos, paciente)
+        datos["costo"] = calcular_Gn(datos, paciente)
     return copia
 
 def dibujar_grafo(grafo):
