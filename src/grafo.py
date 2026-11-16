@@ -1,4 +1,3 @@
-import heapq
 import math
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -28,7 +27,6 @@ def obtener_maximizacion(paciente):
         return 1.5, 80000
     return 1.0, 50000
 
-
 def peso_severidad(paciente):
     return 1 + (paciente["Severidad_Diagnostico"] -1 )/4
 
@@ -49,21 +47,6 @@ def calcular_Hn(datos, paciente):
         return float("inf")
     return datos["costo_base"] * alpha + beta * peso_severidad(paciente) * -math.log(efectividad)
 
-def calcular_heuristica(grafo, paciente, meta='Alta'):
-    """h(n) = costo mínimo de n a la meta usando el costo relajado (multiplicadores = 1)."""
-    h = {meta: 0.0}
-    frontera = [(0.0, meta)]
-    while frontera:
-        d, nodo = heapq.heappop(frontera)
-        if d > h[nodo]:
-            continue
-        for origen, _, datos in grafo.in_edges(nodo, data=True):   # aristas al revés
-            nd = d + calcular_Hn(datos, paciente)
-            if nd < h.get(origen, float('inf')):
-                h[origen] = nd
-                heapq.heappush(frontera, (nd, origen))
-    return h
-
 def producto_multiplicadores(datos, paciente):
     """Multiplica solo los multiplicadores de los factores de riesgo activos de los pacientes."""
     producto = 1.0
@@ -77,11 +60,19 @@ def producto_multiplicadores(datos, paciente):
         producto *= datos["mult_inmuno"]
     return producto
 
+def calcular_heuristica(grafo, meta='Alta'):
+    """h(n) = costo mínimo de n a la meta usando costo_h (sin multiplicadores)."""
+    dist = nx.single_source_dijkstra_path_length(grafo.reverse(copy=True), meta, weight='costo_h')
+    return {nodo: dist.get(nodo, float('inf')) for nodo in grafo.nodes}
 
-def asignar_costos(grafo, paciente):
+def asignar_costos(grafo, paciente, meta='Alta'):
     copia = grafo.copy()
     for _, _, datos in copia.edges(data=True):
         datos["costo"] = calcular_Gn(datos, paciente)
+        datos["costo_h"] = calcular_Hn(datos, paciente)
+    h = calcular_heuristica(copia, meta)
+    for nodo in copia.nodes:
+        copia.nodes[nodo]["h"] = h[nodo]
     return copia
 
 def dibujar_grafo(grafo):

@@ -1,5 +1,6 @@
 from collections import deque
 import heapq
+from grafo import calcular_heuristica
 
 # ---------------------------------------------------------------
 # Búsqueda en anchura (BFS)
@@ -87,39 +88,32 @@ def ucs(grafo, inicio='Diagnostico', meta='Alta'):
 # Búsqueda en A estrella (A*)
 # ---------------------------------------------------------------
 def a_estrella(grafo, inicio='Diagnostico', meta='Alta'):
-    """
-    Nivel 3: A*.
-    Considera costos y riesgos del paciente (peso = costo calculado por UCS + heurística).
-    Retorna: ruta_estados, ruta_tratamientos, costo_acumulado, nodos_expandidos.
-    """
+    h = calcular_heuristica(grafo, meta)
     desempate = 0
     frontera = []
-    heapq.heappush(frontera, (0.0, desempate, inicio, [inicio], [], 0.0, 1.0))
+    heapq.heappush(frontera, (h[inicio], desempate, 0.0, inicio, [inicio], [], 0.0, 1.0))
     costos_minimos = {inicio: 0.0}
     nodos_expandidos = 0
 
     while frontera:
-        costo_acum, _, nodo_actual, camino_estados, camino_acciones, costo_financiero, tasa_efectividad = heapq.heappop(frontera)
+        f, _, g, nodo_actual, camino_estados, camino_acciones, costo_financiero, tasa_efectividad = heapq.heappop(frontera)
         if nodo_actual == meta:
             return {
                 'algoritmo': 'A*',
                 'camino_estados': camino_estados,
                 'ruta_propuesta': camino_acciones,
-                'costo_total': costo_acum,
+                'costo_total': g,
                 'nodos_expandidos': nodos_expandidos,
                 'costo_financiero': costo_financiero,
                 'tasa_efectividad': tasa_efectividad
             }
-        if costo_acum > costos_minimos[nodo_actual]:
+        if g > costos_minimos[nodo_actual]:
             continue
         nodos_expandidos += 1
-        neighbors = list(grafo.out_edges(nodo_actual, data=True))
-        for neighbor in neighbors:
-            vecino = neighbor[1]
-            arista_data = neighbor[2]
-            costo_total = costo_acum + arista_data['costo']
-            if vecino not in costos_minimos or costo_total < costos_minimos[vecino]:
-                costos_minimos[vecino] = costo_total
+        for _, vecino, arista_data in grafo.out_edges(nodo_actual, data=True):
+            nuevo_g = g + arista_data['costo']
+            if vecino not in costos_minimos or nuevo_g < costos_minimos[vecino]:
+                costos_minimos[vecino] = nuevo_g
                 desempate += 1
-                heapq.heappush(frontera, (costo_total, desempate, vecino, camino_estados + [vecino], camino_acciones + [arista_data['tratamiento']], costo_financiero + arista_data['costo_base'], tasa_efectividad * arista_data['efectividad']))
+                heapq.heappush(frontera, (nuevo_g + h[vecino], desempate, nuevo_g, vecino,camino_estados + [vecino],camino_acciones + [arista_data['tratamiento']],costo_financiero + arista_data['costo_base'],tasa_efectividad * arista_data['efectividad']))
     return None
