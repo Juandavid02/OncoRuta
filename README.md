@@ -346,7 +346,7 @@ Aplicación de escritorio en Tkinter (`AppOncoRuta`).
 | Reporte comparativo y exportación | ✅ Completo |
 | Interfaz: Datos y Resultados | ✅ Completo |
 | Interfaz: Grafo con rutas resaltadas | ✅ Completo |
-| Análisis crítico y ético | 📄 Documento de la entrega |
+| Análisis crítico y ético | ✅ Completo |
 
 ---
 
