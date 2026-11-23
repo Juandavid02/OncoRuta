@@ -4,9 +4,12 @@ from tkinter import filedialog
 
 from tkinter import messagebox
 
-from lector import cargar, validar, obtener_aristas, RUTA_DEFECTO
-from grafo import construir_grafo
-from reporte import generar_reporte_seleccion, convertir_reportes_a_dataframe, tabla_final_reportes, exportar_reportes
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+
+from lector import cargar, validar, obtener_aristas, obtener_paciente, RUTA_DEFECTO
+from grafo import construir_grafo, asignar_costos, dibujar_grafo, COLORES_ALGORITMO
+from reporte import ALGORITMOS, generar_reporte_seleccion, convertir_reportes_a_dataframe, tabla_final_reportes, exportar_reportes
 import pandas as pd
 
 
@@ -27,6 +30,7 @@ class AppOncoRuta(tk.Tk):
         self.crear_pestanas()
         self.crear_tab_datos()
         self.crear_tab_resultados()
+        self.crear_tab_grafo()
         
 
     def crear_pestanas(self):
@@ -199,6 +203,85 @@ class AppOncoRuta(tk.Tk):
         self.tabla_reportes = None
         self.tabla_final = None
         self.etiqueta_estado.config(text="Datos nuevos cargados. Ejecuta nuevamente para generar reportes.")
+
+        self.combo_paciente_grafo.config(values=self.opciones_grafo())
+        self.var_paciente_grafo.set("General")
+        self.actualizar_grafo()
+
+    # ---------------------------------------------------------------
+    # Pestaña Grafo
+    # ---------------------------------------------------------------
+
+    def opciones_grafo(self):
+        if self.pacientes is None:
+            return ["General"]
+        return ["General"] + self.pacientes["ID_Paciente"].tolist()
+
+    def crear_tab_grafo(self):
+        barra = ttk.Frame(self.tab_grafo)
+        barra.pack(fill="x", padx=10, pady=10)
+
+        ttk.Label(barra, text="Paciente:").pack(side="left")
+        self.var_paciente_grafo = tk.StringVar(value="General")
+        self.combo_paciente_grafo = ttk.Combobox(barra, textvariable=self.var_paciente_grafo,
+                                                state="readonly", values=self.opciones_grafo(), width=12)
+        self.combo_paciente_grafo.pack(side="left", padx=5)
+        self.combo_paciente_grafo.bind("<<ComboboxSelected>>", self.actualizar_grafo)
+
+        self.etiqueta_grafo = ttk.Label(barra, text="")
+        self.etiqueta_grafo.pack(side="left", padx=15)
+
+        zona_figura = ttk.Frame(self.tab_grafo)
+        zona_figura.pack(fill="both", expand=True, padx=10, pady=(0, 10))
+        self.figura_grafo = Figure(figsize=(12, 6))
+        self.lienzo_grafo = FigureCanvasTkAgg(self.figura_grafo, master=zona_figura)
+        NavigationToolbar2Tk(self.lienzo_grafo, zona_figura).update()
+        self.lienzo_grafo.get_tk_widget().pack(fill="both", expand=True)
+
+        self.actualizar_grafo()
+
+    def actualizar_grafo(self, event=None):
+        """Dibuja el grafo general o los tres grafos (BFS, UCS, A*) del paciente elegido."""
+        self.figura_grafo.clear()
+        if self.grafo is None:
+            self.etiqueta_grafo.config(text="No hay datos cargados")
+            self.lienzo_grafo.draw()
+            return
+
+        seleccion = self.var_paciente_grafo.get()
+        if seleccion == "General":
+            ax = self.figura_grafo.add_subplot(1, 1, 1)
+            dibujar_grafo(self.grafo, ax=ax, titulo="Grafo general de tratamientos")
+            self.etiqueta_grafo.config(text="Elige un paciente para ver la ruta de BFS, UCS y A*")
+        else:
+            try:
+                paciente = obtener_paciente(self.pacientes, seleccion)
+                grafo_paciente = asignar_costos(self.grafo, paciente)
+            except Exception as e:
+                messagebox.showerror("Error al dibujar el grafo", str(e))
+                return
+            for i, nombre in enumerate(["BFS", "UCS", "A*"]):
+                ax = self.figura_grafo.add_subplot(1, 3, i + 1)
+                resultado = ALGORITMOS[nombre](grafo_paciente)
+                if resultado is None:
+                    dibujar_grafo(grafo_paciente, ax=ax, mostrar_h=True,
+                                titulo=f"{nombre}\nSin ruta a la meta", tam_nodo=1500, tam_fuente=7)
+                    continue
+                titulo = (f"{nombre}\nCosto: {resultado['costo_total']:,.2f} | "
+                        f"Expandidos: {resultado['nodos_expandidos']}\n"
+                        f"Costo financiero: ${resultado['costo_financiero']:,.0f} | "
+                        f"Efectividad: {resultado['tasa_efectividad'] * 100:.1f}%")
+                dibujar_grafo(grafo_paciente, ax=ax,
+                            ruta_estados=resultado["camino_estados"],
+                            ruta_tratamientos=resultado["ruta_propuesta"],
+                            color_ruta=COLORES_ALGORITMO[nombre], mostrar_h=True,
+                            titulo=titulo, tam_nodo=1500, tam_fuente=7)
+            nombre_paciente = paciente.get("Nombre_Anonimizado", "")
+            self.figura_grafo.suptitle(f"Paciente {seleccion} {nombre_paciente} — h(n) en cada nodo", fontsize=11)
+            self.etiqueta_grafo.config(text="Ruta resaltada: BFS azul, UCS verde, A* rojo")
+
+        self.figura_grafo.tight_layout()
+        self.lienzo_grafo.draw()
 
 
 
