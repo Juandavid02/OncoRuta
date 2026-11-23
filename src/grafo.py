@@ -75,22 +75,77 @@ def asignar_costos(grafo, paciente, meta='Alta'):
         copia.nodes[nodo]["h"] = h[nodo]
     return copia
 
-def dibujar_grafo(grafo):
-    """Dibuja el grafo con posiciones fijas y etiquetas de tratamientos en las aristas."""
-    # Posiciones fijas: el flujo se lee de izquierda a derecha
-    pos = {
-        "Diagnostico":   (0, 0),
-        "Post_Op_Mayor": (1, 1.5),
-        "Post_Op_Menor": (1, 0.5),
-        "Consolidacion": (2, 1),
-        "Alta":          (3, 0),
-    }
-    tam_nodo = 2800
+# Posiciones fijas: el flujo se lee de izquierda a derecha
+POSICIONES = {
+    "Diagnostico":   (0, 0),
+    "Post_Op_Mayor": (1, 1.5),
+    "Post_Op_Menor": (1, 0.5),
+    "Consolidacion": (2, 1),
+    "Alta":          (3, 0),
+}
 
-    fig, ax = plt.subplots(figsize=(11, 6))
-    nx.draw_networkx_nodes(grafo, pos, node_color="lightblue",
-                        node_size=tam_nodo, ax=ax)
-    nx.draw_networkx_labels(grafo, pos, font_size=8, ax=ax)
+COLORES_ALGORITMO = {"BFS": "#1f77b4", "UCS": "#2ca02c", "A*": "#d62728"}
+
+
+def obtener_posiciones(grafo):
+    """Usa las posiciones fijas; si aparece un nodo desconocido, usa un layout automático."""
+    if all(nodo in POSICIONES for nodo in grafo.nodes):
+        return POSICIONES
+    return nx.spring_layout(grafo, seed=42)
+
+
+def formatear_h(valor):
+    if valor is None or valor == float("inf"):
+        return "∞"
+    return f"{valor:,.0f}"
+
+
+def dibujar_grafo(grafo, ax=None, ruta_estados=None, ruta_tratamientos=None,
+                  color_ruta="#d62728", mostrar_h=False,
+                  titulo="Grafo de Tratamientos", tam_nodo=2800, tam_fuente=8):
+    """
+    Dibuja el grafo con posiciones fijas y etiquetas de tratamientos en las aristas.
+    - ax: eje de matplotlib donde dibujar (si es None se abre una ventana propia).
+    - ruta_estados / ruta_tratamientos: ruta elegida por un algoritmo, que se resalta.
+    - mostrar_h: escribe h(n) debajo del nombre de cada nodo (requiere asignar_costos).
+    """
+    ventana_propia = ax is None
+    if ventana_propia:
+        _, ax = plt.subplots(figsize=(11, 6))
+
+    pos = obtener_posiciones(grafo)
+    hay_ruta = bool(ruta_estados)
+    nodos_ruta = set(ruta_estados or [])
+    # Cada paso de la ruta se identifica por (origen, destino, tratamiento),
+    # porque en un MultiDiGraph puede haber varias aristas entre las mismas fases.
+    aristas_ruta = set()
+    if hay_ruta and ruta_tratamientos:
+        aristas_ruta = set(zip(ruta_estados[:-1], ruta_estados[1:], ruta_tratamientos))
+
+    colores_nodos = []
+    for nodo in grafo.nodes:
+        if not hay_ruta:
+            colores_nodos.append("lightblue")
+        elif nodo in nodos_ruta:
+            colores_nodos.append(color_ruta)
+        else:
+            colores_nodos.append("#e0e0e0")
+    nx.draw_networkx_nodes(grafo, pos, node_color=colores_nodos,
+                           edgecolors="#555555", node_size=tam_nodo, ax=ax)
+
+    # Nombre de la fase encima del nodo y h(n) debajo, para que no se salgan del círculo
+    radio = (tam_nodo ** 0.5) / 2 + 2  # radio del nodo en puntos
+    for nodo, datos in grafo.nodes(data=True):
+        x, y = pos[nodo]
+        ax.annotate(nodo, (x, y), xytext=(0, radio if mostrar_h else 0), textcoords="offset points",
+                    ha="center", va="bottom" if mostrar_h else "center",
+                    fontsize=tam_fuente, fontweight="bold")
+        if mostrar_h and "h" in datos:
+            ax.annotate(f"h={formatear_h(datos['h'])}", (x, y), xytext=(0, -radio),
+                        textcoords="offset points", ha="center", va="top",
+                        fontsize=tam_fuente, color="#333333",
+                        bbox=dict(boxstyle="round,pad=0.2", facecolor="#fff8dc",
+                                  edgecolor="#c8a800", alpha=0.95))
 
     # Agrupar las aristas por par (origen, destino) para detectar las paralelas
     pares = {}
@@ -102,11 +157,19 @@ def dibujar_grafo(grafo):
         for i, datos in enumerate(lista):
             # Una sola arista: recta. Varias: curvas simétricas (-0.25 y 0.25)
             rad = 0.0 if n == 1 else -0.25 + 0.5 * i / (n - 1)
+            resaltada = (u, v, datos["tratamiento"]) in aristas_ruta
+            if resaltada:
+                color, ancho = color_ruta, 3.0
+            elif hay_ruta:
+                color, ancho = "#b0b0b0", 1.0
+            else:
+                color, ancho = "black", 1.2
 
             nx.draw_networkx_edges(
                 grafo, pos, edgelist=[(u, v)],
                 connectionstyle=f"arc3,rad={rad}",
-                arrows=True, arrowsize=18, node_size=tam_nodo, ax=ax,
+                arrows=True, arrowsize=18, node_size=tam_nodo,
+                edge_color=color, width=ancho, ax=ax,
             )
 
             # Etiqueta en el punto medio de la curva
@@ -115,12 +178,16 @@ def dibujar_grafo(grafo):
             dx, dy = x2 - x1, y2 - y1
             xm = (x1 + x2) / 2 + 0.5 * rad * dy
             ym = (y1 + y2) / 2 - 0.5 * rad * dx
-            ax.text(xm, ym, datos["tratamiento"], fontsize=8,
+            ax.text(xm, ym, datos["tratamiento"], fontsize=tam_fuente,
                     ha="center", va="center",
+                    color=color_ruta if resaltada else "black",
+                    fontweight="bold" if resaltada else "normal",
                     bbox=dict(facecolor="white", edgecolor="none", alpha=0.85))
 
-    ax.set_title("Grafo de Tratamientos")
+    ax.set_title(titulo, fontsize=tam_fuente + 2)
     ax.axis("off")
-    plt.tight_layout()
-    plt.show()
-
+    ax.margins(0.12)
+    if ventana_propia:
+        plt.tight_layout()
+        plt.show()
+    return ax
